@@ -464,7 +464,8 @@ function sendText() {
   el.value = ''; sendMessage(t);
 }
 
-async function sendMessage(text) {
+async function sendMessage(text) {if(!window._apiKey) window._apiKey = sessionStorage.getItem('jarvis_key');
+  addMsg('u', 'RICHARD', text);
   addMsg('u', 'RICHARD', text);
   history.push({ role: 'user', content: text });
   setOrb('think');
