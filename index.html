@@ -581,7 +581,7 @@ window.onload = () => {
     alert('Valid API key required. Reload the page to try again.');
     return;
   }
-  window._apiKey = key;
+  window._apiKey = key;sessionStorage.setItem('jarvis_key', key);
   addMsg('j','J.A.R.V.I.S','API key accepted. R&R Capital intelligence system is live. CPI at 3.8% today — Fed rate hike risk elevated. NBIS reports tomorrow. ONDS and WYFI on Wednesday. How can I assist you?');
   if (autoSpeak) setTimeout(()=>speak('API key accepted. R&R Capital intelligence system is live. How can I assist you?'),500);
 };
