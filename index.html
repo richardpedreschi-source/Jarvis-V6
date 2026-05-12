@@ -225,6 +225,20 @@
   /* Radar mini */
   .radar-svg { width:100%; max-width:160px; display:block; margin:0 auto; animation: rSpin 5s linear infinite; filter:drop-shadow(0 0 6px var(--cyan-glow)); }
   @keyframes rSpin { to { transform:rotate(360deg); } }
+
+  .port-tabs { display:flex; gap:4px; margin-bottom:8px; }
+  .ptab { flex:1; padding:4px 0; text-align:center; font-family:'Orbitron',monospace; font-size:7px; letter-spacing:2px; border:1px solid var(--border); border-radius:2px; cursor:pointer; transition:all 0.2s; color:rgba(0,212,255,0.4); background:transparent; }
+  .ptab.active { background:var(--cyan-dim); border-color:var(--cyan); color:var(--cyan); }
+  .ptab.gold-tab.active { background:var(--gold-dim); border-color:var(--gold); color:var(--gold); }
+  .hidden { display:none !important; }
+  .ctable { width:100%; border-collapse:collapse; }
+  .ctable th { font-family:'Orbitron',monospace; font-size:7px; letter-spacing:1px; color:rgba(255,201,71,0.4); padding:2px 3px; text-align:left; border-bottom:1px solid rgba(255,201,71,0.1); }
+  .ctable th.r { text-align:right; }
+  .ctable td { font-family:'Share Tech Mono',monospace; font-size:10px; padding:3px 3px; border-bottom:1px solid rgba(255,201,71,0.04); }
+  .ctable tr:hover td { background:rgba(255,201,71,0.04); }
+  .csym { color:var(--gold); font-weight:600; }
+  .cval { color:rgba(255,255,255,0.75); text-align:right; }
+  .cpnl { text-align:right; font-size:9px; }
 </style>
 </head>
 <body>
@@ -248,22 +262,62 @@
 
   <!-- LEFT -->
   <div class="left">
-    <div class="panel" style="flex:1;overflow-y:auto">
-      <div class="plabel">Portfolio Positions</div>
-      <div class="prow"><span class="sym">ADBE</span><span class="shrs">411 shrs</span><span class="pnl up">+$100,695</span></div>
-      <div class="prow"><span class="sym">IREN</span><span class="shrs">170 shrs</span><span class="pnl dn">-$680</span></div>
-      <div class="prow"><span class="sym">CIFR</span><span class="shrs">500 shrs</span><span class="pnl up">+$1,000</span></div>
-      <div class="prow"><span class="sym">ONDS</span><span class="shrs">164 shrs</span><span class="pnl dn">-$656</span></div>
-      <div class="prow"><span class="sym">WYFI</span><span class="shrs">42 shrs</span><span class="pnl up">+$462</span></div>
-      <div class="prow"><span class="sym">POET</span><span class="shrs">100 shrs</span><span class="pnl up">+$150</span></div>
-      <div class="prow"><span class="sym">CLSK</span><span class="shrs">82 shrs</span><span class="pnl dn">-$174</span></div>
-      <div class="prow"><span class="sym">MU</span><span class="shrs">2 shrs</span><span class="pnl flat">$0</span></div>
-      <div class="prow"><span class="sym">MRAM</span><span class="shrs">24 shrs</span><span class="pnl dn">-$38</span></div>
-      <div class="prow"><span class="sym">NBIS</span><span class="shrs">5 shrs</span><span class="pnl dn">-$39</span></div>
-      <div class="prow"><span class="sym">WULF</span><span class="shrs">19.5 shrs</span><span class="pnl up">+$127</span></div>
-      <div class="prow"><span class="sym">ASTS</span><span class="shrs">4.5 shrs</span><span class="pnl dn">-$48</span></div>
-      <div class="prow"><span class="sym">AAOI</span><span class="shrs">5 shrs</span><span class="pnl up">+$15</span></div>
-      <div class="prow" style="border-top:1px solid rgba(0,212,255,.15);padding-top:4px;margin-top:2px;"><span class="sym" style="font-size:8px">TOTAL</span><span class="shrs"></span><span class="pnl" style="color:var(--cyan)">$130,137</span></div>
+    <div class="panel" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+      <div class="port-tabs">
+        <div class="ptab active" id="stocksTab" onclick="showPort('stocks')">📈 STOCKS</div>
+        <div class="ptab gold-tab" id="cryptoTab" onclick="showPort('crypto')">₿ CRYPTO</div>
+      </div>
+      <div id="stocksPort" style="flex:1;overflow-y:auto;">
+        <div class="prow"><span class="sym">ADBE</span><span class="shrs">411</span><span class="pnl up">+$100,284</span></div>
+        <div class="prow"><span class="sym">IREN</span><span class="shrs">170</span><span class="pnl dn">-$680</span></div>
+        <div class="prow"><span class="sym">CIFR</span><span class="shrs">500</span><span class="pnl up">+$1,000</span></div>
+        <div class="prow"><span class="sym">ONDS</span><span class="shrs">250</span><span class="pnl dn">-$500</span></div>
+        <div class="prow"><span class="sym">WYFI</span><span class="shrs">42</span><span class="pnl up">+$462</span></div>
+        <div class="prow"><span class="sym">POET</span><span class="shrs">100</span><span class="pnl up">+$50</span></div>
+        <div class="prow"><span class="sym">CLSK</span><span class="shrs">100</span><span class="pnl dn">-$100</span></div>
+        <div class="prow"><span class="sym">MU</span><span class="shrs">2.5</span><span class="pnl dn">-$5</span></div>
+        <div class="prow"><span class="sym">MRAM</span><span class="shrs">25</span><span class="pnl dn">-$25</span></div>
+        <div class="prow"><span class="sym">NBIS</span><span class="shrs">10</span><span class="pnl dn">-$20</span></div>
+        <div class="prow"><span class="sym">WULF</span><span class="shrs">19.5</span><span class="pnl up">+$166</span></div>
+        <div class="prow"><span class="sym">AAOI</span><span class="shrs">5</span><span class="pnl dn">-$100</span></div>
+        <div class="prow" style="border-top:1px solid rgba(0,212,255,.15);padding-top:4px;margin-top:2px;"><span class="sym" style="font-size:8px">TOTAL</span><span class="shrs"></span><span class="pnl" style="color:var(--cyan)">$131,513</span></div>
+      </div>
+      <div id="cryptoPort" class="hidden" style="flex:1;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:8px;margin-bottom:6px;padding:3px 6px;background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.2);border-radius:2px;">
+          <span style="color:rgba(255,255,255,.5)">INV: <span style="color:#fff">$35,086</span></span>
+          <span style="color:rgba(255,255,255,.5)">VAL: <span style="color:#fff">$21,438</span></span>
+          <span style="color:rgba(255,255,255,.5)">PNL: <span style="color:var(--red)">-$13,648</span></span>
+        </div>
+        <table class="ctable">
+          <thead><tr><th>COIN</th><th>AMT</th><th class="r">VALUE</th><th class="r">%</th></tr></thead>
+          <tbody>
+            <tr><td class="csym">XRP</td><td class="shrs">4,012</td><td class="cval">$5,777</td><td class="cpnl dn">-14.3%</td></tr>
+            <tr><td class="csym">ETH</td><td class="shrs">1</td><td class="cval">$2,291</td><td class="cpnl dn">-15.4%</td></tr>
+            <tr><td class="csym">ONDO</td><td class="shrs">4,917</td><td class="cval">$1,967</td><td class="cpnl dn">-53.5%</td></tr>
+            <tr><td class="csym">HBAR</td><td class="shrs">14,838</td><td class="cval">$1,335</td><td class="cpnl dn">-62.5%</td></tr>
+            <tr><td class="csym">LINK</td><td class="shrs">151</td><td class="cval">$1,540</td><td class="cpnl dn">-40.0%</td></tr>
+            <tr><td class="csym">RENDER</td><td class="shrs">850</td><td class="cval">$1,615</td><td class="cpnl dn">-44.1%</td></tr>
+            <tr><td class="csym">FETCH</td><td class="shrs">6,015</td><td class="cval">$1,323</td><td class="cpnl dn">-51.1%</td></tr>
+            <tr><td class="csym">XLM</td><td class="shrs">6,040</td><td class="cval">$966</td><td class="cpnl dn">-51.5%</td></tr>
+            <tr><td class="csym">SOL</td><td class="shrs">10</td><td class="cval">$950</td><td class="cpnl dn">-5.0%</td></tr>
+            <tr><td class="csym">Akash</td><td class="shrs">1,010</td><td class="cval">$879</td><td class="cpnl up">+171.9%</td></tr>
+            <tr><td class="csym">Sui</td><td class="shrs">610</td><td class="cval">$750</td><td class="cpnl up">+33.7%</td></tr>
+            <tr><td class="csym">ADA</td><td class="shrs">2,005</td><td class="cval">$541</td><td class="cpnl dn">-55.7%</td></tr>
+            <tr><td class="csym">AVAX</td><td class="shrs">50</td><td class="cval">$493</td><td class="cpnl dn">-60.6%</td></tr>
+            <tr><td class="csym">AMP</td><td class="shrs">507K</td><td class="cval">$472</td><td class="cpnl dn">-80.2%</td></tr>
+            <tr><td class="csym">ALGO</td><td class="shrs">2,550</td><td class="cval">$281</td><td class="cpnl flat">0.0%</td></tr>
+            <tr><td class="csym">Telcoin</td><td class="shrs">78K</td><td class="cval">$212</td><td class="cpnl dn">-61.4%</td></tr>
+            <tr><td class="csym">Kaspa</td><td class="shrs">1,526</td><td class="cval">$46</td><td class="cpnl dn">-62.5%</td></tr>
+          </tbody>
+          <tfoot>
+            <tr style="border-top:1px solid rgba(255,201,71,.2);">
+              <td colspan="2" class="csym" style="font-size:9px;padding-top:5px;">TOTAL</td>
+              <td class="cval" style="color:var(--gold);padding-top:5px;">$21,438</td>
+              <td class="cpnl dn" style="padding-top:5px;">-38.9%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
     <div class="panel" style="flex:0 0 170px">
       <div class="plabel">Radar</div>
@@ -329,7 +383,7 @@
     <div class="panel" style="flex:1;overflow-y:auto">
       <div class="plabel">Earnings Calendar</div>
       <div class="erow"><div class="edate">TUE 13</div><div><div class="ename">NBIS Nebius</div><div class="etag">HELD · 5 shrs</div></div></div>
-      <div class="erow"><div class="edate">WED 14</div><div><div class="ename">ONDS Ondas</div><div class="etag red">PRIMARY FOCUS</div></div></div>
+      <div class="erow"><div class="edate">WED 14</div><div><div class="ename">ONDS Ondas · 250 shrs</div><div class="etag red">PRIMARY FOCUS</div></div></div>
       <div class="erow"><div class="edate">WED 14</div><div><div class="ename">WYFI WhiteFiber</div><div class="etag gold">SELL 23 SHARES</div></div></div>
       <div class="erow"><div class="edate">MAY 21</div><div><div class="ename">POET Technologies</div><div class="etag">100 shares</div></div></div>
       <div class="erow"><div class="edate">MAY 21</div><div><div class="ename">DGXX Digi Power X</div><div class="etag gold">WATCHLIST</div></div></div>
@@ -385,9 +439,9 @@ PORTFOLIO:
 - WULF: 19.5 shares, cost $13.50, now ~$23 (in profit)
 - POET: 100 shares, cost $13, value $1,450, PnL +$150 (earnings May 21)
 - NBIS: 5 shares, cost $190.88, now ~$185 (EARNINGS TOMORROW May 13)
-- MU: 2 shares, cost $764, value $1,528, PnL $0
-- CLSK: 82 shares, cost $14.62, value $1,025, PnL -$174
-- ASTS: 4.5 shares, cost $83.60, value $329, PnL -$48 (reminder position)
+- MU: 2.5 shares, cost $748 avg, value $1,865, PnL -$5
+- CLSK: 100 shares, cost $14 avg, value $1,300, PnL -$100
+ (reminder position)
 - MRAM: 13 shares, cost $42.47, now ~$38.71 (Pentagon contract, speculative)
 
 CRYPTO: Total ~$21,438, invested $35,086 — DOWN $13,648 (-38.9%). Only Akash (+171%) and Sui (+33%) in profit.
@@ -401,6 +455,20 @@ TODAY: CPI printed 3.8% (highest since May 2023), Core CPI 2.8% above expectatio
 Keep responses under 80 words — concise and speakable. This is read aloud via TTS.`;
 
 // Init speech recognition
+function showPort(tab) {
+  if (tab==='stocks') {
+    document.getElementById('stocksPort').classList.remove('hidden');
+    document.getElementById('cryptoPort').classList.add('hidden');
+    document.getElementById('stocksTab').classList.add('active');
+    document.getElementById('cryptoTab').classList.remove('active');
+  } else {
+    document.getElementById('cryptoPort').classList.remove('hidden');
+    document.getElementById('stocksPort').classList.add('hidden');
+    document.getElementById('cryptoTab').classList.add('active');
+    document.getElementById('stocksTab').classList.remove('active');
+  }
+}
+
 function initRecognition() {
   const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SRClass) {
@@ -464,8 +532,8 @@ function sendText() {
   el.value = ''; sendMessage(t);
 }
 
-async function sendMessage(text) {if(!window._apiKey) window._apiKey = sessionStorage.getItem('jarvis_key');
-  addMsg('u', 'RICHARD', text);
+async function sendMessage(text) {
+  if(!window._apiKey) window._apiKey=sessionStorage.getItem('jarvis_key');
   addMsg('u', 'RICHARD', text);
   history.push({ role: 'user', content: text });
   setOrb('think');
@@ -582,7 +650,8 @@ window.onload = () => {
     alert('Valid API key required. Reload the page to try again.');
     return;
   }
-  window._apiKey = key;sessionStorage.setItem('jarvis_key', key);
+  window._apiKey = key;
+  sessionStorage.setItem('jarvis_key', key);
   addMsg('j','J.A.R.V.I.S','API key accepted. R&R Capital intelligence system is live. CPI at 3.8% today — Fed rate hike risk elevated. NBIS reports tomorrow. ONDS and WYFI on Wednesday. How can I assist you?');
   if (autoSpeak) setTimeout(()=>speak('API key accepted. R&R Capital intelligence system is live. How can I assist you?'),500);
 };
