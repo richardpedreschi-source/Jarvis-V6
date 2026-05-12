@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S — R&R Capital</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cyan: #00d4ff;
+    --cyan-dim: rgba(0,212,255,0.12);
+    --cyan-glow: rgba(0,212,255,0.35);
+    --gold: #ffc947;
+    --gold-dim: rgba(255,201,71,0.12);
+    --red: #ff4757;
+    --green: #2ed573;
+    --bg: #020810;
+    --panel: rgba(0,18,35,0.9);
+    --border: rgba(0,212,255,0.18);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--cyan);
+    font-family: 'Rajdhani', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    cursor: crosshair;
+  }
+
+  .grid-bg {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridScroll 25s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes gridScroll { to { transform: translateY(50px); } }
+
+  .scanlines {
+    position: fixed; inset: 0; pointer-events: none; z-index: 2;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.025) 3px, rgba(0,0,0,0.025) 4px);
+  }
+
+  .corner { position: fixed; width: 36px; height: 36px; border-color: rgba(0,212,255,0.35); border-style: solid; pointer-events: none; z-index: 5; }
+  .tl { top:6px; left:6px; border-width: 2px 0 0 2px; }
+  .tr { top:6px; right:6px; border-width: 2px 2px 0 0; }
+  .bl { bottom:6px; left:6px; border-width: 0 0 2px 2px; }
+  .br { bottom:6px; right:6px; border-width: 0 2px 2px 0; }
+
+  /* Layout */
+  .hud {
+    position: relative; z-index: 10;
+    width: 100vw; height: 100vh;
+    display: grid;
+    grid-template-columns: 260px 1fr 250px;
+    grid-template-rows: 52px 1fr 180px 52px;
+    gap: 6px; padding: 6px;
+  }
+
+  /* Top bar */
+  .topbar {
+    grid-column: 1/-1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 3px;
+    overflow: hidden; position: relative;
+  }
+  .topbar::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    animation: sweep 4s linear infinite;
+  }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+  .logo { font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 4px; }
+  .status-items { display: flex; gap: 20px; }
+  .si { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: rgba(0,212,255,0.55); display: flex; align-items: center; gap: 5px; }
+  .dot { width: 5px; height: 5px; border-radius: 50%; animation: blink 2s infinite; }
+  .dot.g { background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .dot.y { background: var(--gold); box-shadow: 0 0 4px var(--gold); animation-delay: 0.5s; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .clock { font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--gold); letter-spacing: 2px; }
+
+  /* Alert */
+  .alert {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    background: rgba(255,71,87,0.08); border: 1px solid rgba(255,71,87,0.35);
+    padding: 3px 14px; border-radius: 2px;
+    font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--red);
+    white-space: nowrap; animation: alertPulse 2.5s infinite; z-index: 20;
+  }
+  @keyframes alertPulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
+
+  /* Panels */
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 3px;
+    padding: 14px; position: relative; overflow: hidden;
+  }
+  .panel::before { content: ''; position: absolute; top:0; left:0; width:2px; height:100%; background: var(--cyan); opacity:0.5; }
+  .plabel { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 3px; color: rgba(0,212,255,0.4); margin-bottom: 10px; }
+
+  .left { grid-row: 2/4; display: flex; flex-direction: column; gap: 6px; }
+  .right { grid-row: 2/4; display: flex; flex-direction: column; gap: 6px; }
+
+  /* Portfolio rows */
+  .prow {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; border-bottom: 1px solid rgba(0,212,255,0.05);
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  }
+  .sym { color: var(--cyan); font-weight: 600; min-width: 44px; }
+  .shrs { color: rgba(255,255,255,0.45); font-size: 9px; }
+  .pnl { font-size: 9px; }
+  .up { color: var(--green); } .dn { color: var(--red); }
+
+  /* Center */
+  .center-col { grid-row: 2/4; display: flex; flex-direction: column; gap: 6px; }
+
+  .orb-panel {
+    flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 3px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+
+  .rings-wrap { position: relative; width: 180px; height: 180px; }
+
+  .ring {
+    position: absolute; border-radius: 50%; border: 1px solid var(--cyan);
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    animation: ringOut 3s ease-out infinite;
+  }
+  .ring:nth-child(1) { width:50px; height:50px; animation-delay:0s; }
+  .ring:nth-child(2) { width:85px; height:85px; animation-delay:0.6s; }
+  .ring:nth-child(3) { width:120px; height:120px; animation-delay:1.2s; }
+  .ring:nth-child(4) { width:155px; height:155px; animation-delay:1.8s; }
+  @keyframes ringOut {
+    0% { opacity:0.7; transform: translate(-50%,-50%) scale(0.6); }
+    100% { opacity:0; transform: translate(-50%,-50%) scale(1.1); }
+  }
+
+  .orb {
+    position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+    width: 76px; height: 76px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.25) 0%, rgba(0,212,255,0.04) 65%, transparent 100%);
+    border: 2px solid var(--cyan);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.25s;
+    box-shadow: 0 0 25px var(--cyan-glow), inset 0 0 15px rgba(0,212,255,0.08);
+  }
+  .orb:hover { box-shadow: 0 0 50px var(--cyan-glow), inset 0 0 30px rgba(0,212,255,0.15); transform: translate(-50%,-50%) scale(1.04); }
+  .orb.listen { border-color: var(--red); background: radial-gradient(circle, rgba(255,71,87,0.3) 0%, rgba(255,71,87,0.06) 65%, transparent 100%); box-shadow: 0 0 50px rgba(255,71,87,0.45); animation: orbPulse 0.6s ease-in-out infinite alternate; }
+  .orb.think { border-color: var(--gold); background: radial-gradient(circle, rgba(255,201,71,0.3) 0%, rgba(255,201,71,0.06) 65%, transparent 100%); box-shadow: 0 0 50px rgba(255,201,71,0.45); }
+  @keyframes orbPulse { from { box-shadow: 0 0 25px rgba(255,71,87,0.4); } to { box-shadow: 0 0 70px rgba(255,71,87,0.7); } }
+
+  .orb-icon { font-size: 24px; pointer-events: none; }
+  .orb-sub { font-family: 'Orbitron', monospace; font-size: 7px; letter-spacing: 2px; color: rgba(0,212,255,0.5); margin-top: 3px; pointer-events: none; }
+
+  /* Waveform */
+  .wave { display: flex; align-items: center; gap: 2px; height: 24px; margin-top: 10px; }
+  .wb { width: 3px; border-radius: 2px; background: var(--cyan); opacity: 0.25; transition: height 0.1s; }
+  .wb.on { opacity: 0.9; }
+
+  .vstatus { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(0,212,255,0.4); margin-top: 8px; text-align: center; letter-spacing: 1px; }
+
+  /* Transcript */
+  .transcript {
+    height: 180px; background: var(--panel); border: 1px solid var(--border); border-radius: 3px;
+    padding: 12px; overflow-y: auto;
+  }
+  .transcript::-webkit-scrollbar { width: 3px; }
+  .transcript::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .msg { margin-bottom: 10px; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+  .mlabel { font-family: 'Orbitron', monospace; font-size: 7px; letter-spacing: 3px; margin-bottom: 3px; }
+  .mlabel.u { color: var(--gold); } .mlabel.j { color: var(--cyan); }
+  .mtext { font-size: 13px; color: rgba(255,255,255,0.82); line-height: 1.45; font-weight: 400; }
+
+  .tdot { display: inline-flex; gap: 3px; align-items: center; }
+  .td { width:4px; height:4px; border-radius:50%; background:var(--cyan); animation: tdBounce 1s infinite; }
+  .td:nth-child(2){animation-delay:.15s} .td:nth-child(3){animation-delay:.3s}
+  @keyframes tdBounce { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-4px);opacity:1} }
+
+  /* Right panels */
+  .mrow { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(0,212,255,0.05); font-family:'Share Tech Mono',monospace; font-size:10px; }
+  .mn { color:rgba(0,212,255,0.6); } .mv { color:#fff; }
+
+  .erow { display:flex; gap:8px; padding:5px 0; border-bottom:1px solid rgba(0,212,255,0.05); font-size:11px; }
+  .edate { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--gold); white-space:nowrap; padding-top:1px; }
+  .ename { color:rgba(255,255,255,0.8); line-height:1.3; }
+  .etag { font-size:8px; padding:1px 5px; border-radius:2px; background:var(--cyan-dim); color:var(--cyan); font-family:'Share Tech Mono',monospace; }
+  .etag.red { background:rgba(255,71,87,0.1); color:var(--red); }
+  .etag.gold { background:var(--gold-dim); color:var(--gold); }
+  .etag.green { background:rgba(46,213,115,0.1); color:var(--green); }
+
+  .arow { font-family:'Share Tech Mono',monospace; font-size:9px; line-height:2.2; color:rgba(255,255,255,0.55); }
+  .arow span.g { color:var(--gold); } .arow span.r { color:var(--red); } .arow span.c { color:var(--cyan); }
+
+  /* Bottom bar */
+  .bottombar {
+    grid-column: 1/-1;
+    display: flex; align-items: center; gap: 10px; padding: 0 16px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 3px;
+  }
+  .cprompt { font-family:'Orbitron',monospace; font-size:10px; color:var(--cyan); white-space:nowrap; }
+  .cinput {
+    flex:1; background:transparent; border:none; outline:none;
+    color:#fff; font-family:'Share Tech Mono',monospace; font-size:12px; caret-color:var(--cyan);
+  }
+  .cinput::placeholder { color:rgba(255,255,255,0.18); }
+  .btns { display:flex; gap:6px; }
+  .btn {
+    padding: 5px 14px; border: 1px solid var(--border); background: var(--cyan-dim);
+    color: var(--cyan); font-family:'Orbitron',monospace; font-size:8px; letter-spacing:2px;
+    border-radius:2px; cursor:pointer; transition:all 0.2s; white-space:nowrap;
+  }
+  .btn:hover { background:rgba(0,212,255,0.22); border-color:var(--cyan); box-shadow:0 0 8px var(--cyan-glow); }
+  .btn.active { background:rgba(255,71,87,0.15); border-color:var(--red); color:var(--red); }
+  .btn.grn { background:rgba(46,213,115,0.1); border-color:rgba(46,213,115,0.25); color:var(--green); }
+  .btn.gld { background:var(--gold-dim); border-color:rgba(255,201,71,0.25); color:var(--gold); }
+
+  /* Radar mini */
+  .radar-svg { width:100%; max-width:160px; display:block; margin:0 auto; animation: rSpin 5s linear infinite; filter:drop-shadow(0 0 6px var(--cyan-glow)); }
+  @keyframes rSpin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="scanlines"></div>
+<div class="corner tl"></div><div class="corner tr"></div>
+<div class="corner bl"></div><div class="corner br"></div>
+<div class="alert">⚠ MACRO — CPI 3.8% APR 2026 — FED HIKE PROBABILITY ELEVATED — HOLD CASH</div>
+
+<div class="hud">
+  <!-- TOP -->
+  <div class="topbar">
+    <div class="logo">J.A.R.V.I.S // R&R CAPITAL</div>
+    <div class="status-items">
+      <div class="si"><div class="dot g"></div>ONLINE</div>
+      <div class="si"><div class="dot y"></div>MARKET OPEN</div>
+      <div class="si">NET WORTH: <span style="color:#fff;margin-left:4px">$151,575</span></div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+
+  <!-- LEFT -->
+  <div class="left">
+    <div class="panel" style="flex:1;overflow-y:auto">
+      <div class="plabel">Portfolio Positions</div>
+      <div class="prow"><span class="sym">ADBE</span><span class="shrs">411 shrs</span><span class="pnl up">+$100,695</span></div>
+      <div class="prow"><span class="sym">IREN</span><span class="shrs">170 shrs</span><span class="pnl dn">-$680</span></div>
+      <div class="prow"><span class="sym">CIFR</span><span class="shrs">500 shrs</span><span class="pnl up">+$1,000</span></div>
+      <div class="prow"><span class="sym">ONDS</span><span class="shrs">164 shrs</span><span class="pnl dn">-$656</span></div>
+      <div class="prow"><span class="sym">WYFI</span><span class="shrs">42 shrs</span><span class="pnl up">+$462</span></div>
+      <div class="prow"><span class="sym">POET</span><span class="shrs">100 shrs</span><span class="pnl up">+$150</span></div>
+      <div class="prow"><span class="sym">CLSK</span><span class="shrs">82 shrs</span><span class="pnl dn">-$174</span></div>
+      <div class="prow"><span class="sym">MU</span><span class="shrs">2 shrs</span><span class="pnl flat">$0</span></div>
+      <div class="prow"><span class="sym">MRAM</span><span class="shrs">24 shrs</span><span class="pnl dn">-$38</span></div>
+      <div class="prow"><span class="sym">NBIS</span><span class="shrs">5 shrs</span><span class="pnl dn">-$39</span></div>
+      <div class="prow"><span class="sym">WULF</span><span class="shrs">19.5 shrs</span><span class="pnl up">+$127</span></div>
+      <div class="prow"><span class="sym">ASTS</span><span class="shrs">4.5 shrs</span><span class="pnl dn">-$48</span></div>
+      <div class="prow"><span class="sym">AAOI</span><span class="shrs">5 shrs</span><span class="pnl up">+$15</span></div>
+      <div class="prow" style="border-top:1px solid rgba(0,212,255,.15);padding-top:4px;margin-top:2px;"><span class="sym" style="font-size:8px">TOTAL</span><span class="shrs"></span><span class="pnl" style="color:var(--cyan)">$130,137</span></div>
+    </div>
+    <div class="panel" style="flex:0 0 170px">
+      <div class="plabel">Radar</div>
+      <svg class="radar-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="80" cy="80" r="72" fill="none" stroke="rgba(0,212,255,0.12)" stroke-width="1"/>
+        <circle cx="80" cy="80" r="48" fill="none" stroke="rgba(0,212,255,0.12)" stroke-width="1"/>
+        <circle cx="80" cy="80" r="24" fill="none" stroke="rgba(0,212,255,0.12)" stroke-width="1"/>
+        <line x1="80" y1="8" x2="80" y2="152" stroke="rgba(0,212,255,0.08)" stroke-width="1"/>
+        <line x1="8" y1="80" x2="152" y2="80" stroke="rgba(0,212,255,0.08)" stroke-width="1"/>
+        <path d="M80,80 L80,8 A72,72 0 0,1 152,80 Z" fill="rgba(0,212,255,0.07)"/>
+        <circle cx="80" cy="80" r="3" fill="#00d4ff"/>
+        <circle cx="110" cy="45" r="3" fill="rgba(255,71,87,0.85)"/>
+        <circle cx="55" cy="105" r="3" fill="rgba(46,213,115,0.85)"/>
+        <circle cx="125" cy="95" r="2" fill="rgba(255,201,71,0.85)"/>
+        <circle cx="40" cy="55" r="2" fill="rgba(0,212,255,0.6)"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center-col">
+    <div class="orb-panel">
+      <div class="rings-wrap">
+        <div class="ring"></div><div class="ring"></div>
+        <div class="ring"></div><div class="ring"></div>
+        <div class="orb" id="orb" onclick="toggleVoice()">
+          <div class="orb-icon" id="orbIcon">🎙</div>
+          <div class="orb-sub" id="orbSub">SPEAK</div>
+        </div>
+      </div>
+      <div class="wave" id="wave">
+        <div class="wb" style="height:6px"></div><div class="wb" style="height:12px"></div>
+        <div class="wb" style="height:8px"></div><div class="wb" style="height:18px"></div>
+        <div class="wb" style="height:10px"></div><div class="wb" style="height:22px"></div>
+        <div class="wb" style="height:7px"></div><div class="wb" style="height:16px"></div>
+        <div class="wb" style="height:11px"></div><div class="wb" style="height:20px"></div>
+        <div class="wb" style="height:6px"></div><div class="wb" style="height:14px"></div>
+        <div class="wb" style="height:9px"></div><div class="wb" style="height:18px"></div>
+      </div>
+      <div class="vstatus" id="vstatus">SYSTEM READY — TAP ORB OR SPACEBAR</div>
+    </div>
+
+    <div class="transcript" id="transcript">
+      <div class="msg">
+        <div class="mlabel j">J.A.R.V.I.S</div>
+        <div class="mtext">R&R Capital intelligence online. I have full context of your portfolio, today's CPI print at 3.8%, and this week's earnings calendar. ONDS is your primary concern Wednesday. How can I assist?</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="panel">
+      <div class="plabel">Macro Signals</div>
+      <div class="mrow"><span class="mn">CPI Apr</span><span class="mv dn">3.8% ▲</span></div>
+      <div class="mrow"><span class="mn">Core CPI</span><span class="mv dn">2.8% ▲</span></div>
+      <div class="mrow"><span class="mn">Fed Rate</span><span class="mv" style="color:var(--gold)">HIKE RISK ▲</span></div>
+      <div class="mrow"><span class="mn">BTC</span><span class="mv up">~$103K</span></div>
+      <div class="mrow"><span class="mn">USD/EUR</span><span class="mv">0.92</span></div>
+      <div class="mrow"><span class="mn">VIX</span><span class="mv" style="color:var(--gold)">ELEVATED</span></div>
+    </div>
+
+    <div class="panel" style="flex:1;overflow-y:auto">
+      <div class="plabel">Earnings Calendar</div>
+      <div class="erow"><div class="edate">TUE 13</div><div><div class="ename">NBIS Nebius</div><div class="etag">HELD · 5 shrs</div></div></div>
+      <div class="erow"><div class="edate">WED 14</div><div><div class="ename">ONDS Ondas</div><div class="etag red">PRIMARY FOCUS</div></div></div>
+      <div class="erow"><div class="edate">WED 14</div><div><div class="ename">WYFI WhiteFiber</div><div class="etag gold">SELL 23 SHARES</div></div></div>
+      <div class="erow"><div class="edate">MAY 21</div><div><div class="ename">POET Technologies</div><div class="etag">100 shares</div></div></div>
+      <div class="erow"><div class="edate">MAY 21</div><div><div class="ename">DGXX Digi Power X</div><div class="etag gold">WATCHLIST</div></div></div>
+      <div class="erow"><div class="edate">JUL 26</div><div><div class="ename">JCMR Distributions</div><div class="etag green">€20-27.5K/MO</div></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="plabel">Action Items</div>
+      <div class="arow">
+        <div>▸ <span class="g">WED AM</span> — Sell 23 WYFI</div>
+        <div>▸ <span class="r">WED</span> — ONDS call live</div>
+        <div>▸ <span class="c">TODAY</span> — Hold $1,200 cash</div>
+        <div>▸ <span class="c">WATCH</span> — NBIS tomorrow</div>
+        <div>▸ <span class="g">CONSIDER</span> — DGXX entry</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="bottombar">
+    <div class="cprompt">CMD://</div>
+    <input class="cinput" id="textIn" placeholder="Type a question or command..." onkeydown="if(event.key==='Enter')sendText()"/>
+    <div class="btns">
+      <button class="btn" id="vBtn" onclick="toggleVoice()">🎙 VOICE</button>
+      <button class="btn gld" onclick="sendText()">SEND ▶</button>
+      <button class="btn" onclick="clearChat()">CLEAR</button>
+      <button class="btn grn" id="spkBtn" onclick="toggleSpeak()">🔊 ON</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Clock
+setInterval(()=>{
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB',{hour12:false});
+},1000);
+
+// State
+let autoSpeak = true;
+let isListening = false;
+let recognition = null;
+let history = [];
+let typingEl = null;
+
+const SYSTEM = `You are J.A.R.V.I.S, the personal AI investment assistant for Richard and Rebecca (R&R Capital), based in Amsterdam, Netherlands. Both work at Adobe. Speak in a confident, direct, intelligent British tone — like a highly competent private CIO. Never sycophantic. Give opinions, not just information.
+
+PORTFOLIO:
+- ADBE: 417 shares @ $245 = $102,165 (83% concentration — flagged risk)
+- IREN: 170 shares, cost $59, value $9,350, PnL -$680 (convertible note $2.6B overhang)
+- ONDS: 164 shares, cost $13, now ~$9.37 (DOWN 27.8% — EARNINGS WEDNESDAY — PRIMARY FOCUS)
+- WYFI: 42 shares, cost $15, now ~$27.88 (UP 86% — plan: sell 23 shares Wednesday AM pre-earnings)
+- CIFR: 500 shares, cost $18, now ~$20 (in profit)
+- WULF: 19.5 shares, cost $13.50, now ~$23 (in profit)
+- POET: 100 shares, cost $13, value $1,450, PnL +$150 (earnings May 21)
+- NBIS: 5 shares, cost $190.88, now ~$185 (EARNINGS TOMORROW May 13)
+- MU: 2 shares, cost $764, value $1,528, PnL $0
+- CLSK: 82 shares, cost $14.62, value $1,025, PnL -$174
+- ASTS: 4.5 shares, cost $83.60, value $329, PnL -$48 (reminder position)
+- MRAM: 13 shares, cost $42.47, now ~$38.71 (Pentagon contract, speculative)
+
+CRYPTO: Total ~$21,438, invested $35,086 — DOWN $13,648 (-38.9%). Only Akash (+171%) and Sui (+33%) in profit.
+
+JCMR REAL ESTATE: Distributions starting July 2026, €20,000–27,500/month.
+
+CASH: ~$1,200 available to deploy.
+
+TODAY: CPI printed 3.8% (highest since May 2023), Core CPI 2.8% above expectations. Fed rate hike odds rising. Advice: hold cash, don't rush deployment.
+
+Keep responses under 80 words — concise and speakable. This is read aloud via TTS.`;
+
+// Init speech recognition
+function initRecognition() {
+  const SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SRClass) {
+    document.getElementById('vstatus').textContent = 'VOICE UNAVAILABLE — USE TEXT INPUT';
+    return;
+  }
+  recognition = new SRClass();
+  recognition.lang = 'en-GB';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    setOrb('listen');
+    waveOn(true);
+    document.getElementById('vstatus').textContent = 'LISTENING...';
+  };
+
+  recognition.onresult = (e) => {
+    let final = '', interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if (interim) document.getElementById('vstatus').textContent = interim;
+    if (final) { document.getElementById('vstatus').textContent = 'PROCESSING...'; sendMessage(final); }
+  };
+
+  recognition.onerror = (e) => {
+    setOrb('idle'); waveOn(false); isListening = false;
+    document.getElementById('vBtn').classList.remove('active');
+    document.getElementById('vstatus').textContent = 'MIC ERROR: ' + e.error.toUpperCase() + ' — ALLOW MICROPHONE ACCESS';
+  };
+
+  recognition.onend = () => {
+    setOrb('idle'); waveOn(false); isListening = false;
+    document.getElementById('vBtn').classList.remove('active');
+    if (document.getElementById('vstatus').textContent === 'LISTENING...')
+      document.getElementById('vstatus').textContent = 'SYSTEM READY — TAP ORB OR SPACEBAR';
+  };
+}
+
+initRecognition();
+
+function toggleVoice() {
+  if (!recognition) { alert('Speech recognition not supported. Use Chrome browser.'); return; }
+  if (isListening) { recognition.stop(); isListening = false; }
+  else {
+    try { recognition.start(); isListening = true; document.getElementById('vBtn').classList.add('active'); }
+    catch(e) { document.getElementById('vstatus').textContent = 'MIC ERROR — ENSURE MICROPHONE PERMISSION GRANTED'; }
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && document.activeElement.id !== 'textIn') { e.preventDefault(); toggleVoice(); }
+  if (e.code === 'Escape' && isListening && recognition) recognition.stop();
+});
+
+function sendText() {
+  const el = document.getElementById('textIn');
+  const t = el.value.trim(); if (!t) return;
+  el.value = ''; sendMessage(t);
+}
+
+async function sendMessage(text) {
+  addMsg('u', 'RICHARD', text);
+  history.push({ role: 'user', content: text });
+  setOrb('think');
+  document.getElementById('vstatus').textContent = 'PROCESSING...';
+  showTyping();
+
+  try {
+    const res = await fetch('https://corsproxy.io/?url=https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': window._apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        system: SYSTEM,
+        messages: history
+      })
+    });
+
+    const data = await res.json();
+    hideTyping();
+
+    if (data.content && data.content[0]) {
+      const reply = data.content[0].text;
+      history.push({ role: 'assistant', content: reply });
+      addMsg('j', 'J.A.R.V.I.S', reply);
+      setOrb('idle');
+      document.getElementById('vstatus').textContent = 'SYSTEM READY — TAP ORB OR SPACEBAR';
+      if (autoSpeak) speak(reply);
+    } else {
+      addMsg('j', 'J.A.R.V.I.S', 'Error: ' + (data.error?.message || 'Unknown error. Check API key.'));
+      setOrb('idle');
+    }
+  } catch(err) {
+    hideTyping();
+    addMsg('j', 'J.A.R.V.I.S', 'Connection error. Ensure page is served over HTTPS.');
+    setOrb('idle');
+    document.getElementById('vstatus').textContent = 'CONNECTION ERROR';
+  }
+}
+
+function addMsg(type, label, text) {
+  const t = document.getElementById('transcript');
+  const d = document.createElement('div'); d.className = 'msg';
+  d.innerHTML = `<div class="mlabel ${type}">${label}</div><div class="mtext">${text}</div>`;
+  t.appendChild(d); t.scrollTop = t.scrollHeight;
+}
+
+function showTyping() {
+  const t = document.getElementById('transcript');
+  typingEl = document.createElement('div'); typingEl.className = 'msg';
+  typingEl.innerHTML = `<div class="mlabel j">J.A.R.V.I.S</div><div class="mtext"><div class="tdot"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>`;
+  t.appendChild(typingEl); t.scrollTop = t.scrollHeight;
+}
+
+function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+
+function setOrb(state) {
+  const o = document.getElementById('orb');
+  const i = document.getElementById('orbIcon');
+  const s = document.getElementById('orbSub');
+  o.className = 'orb' + (state !== 'idle' ? ' ' + (state === 'listen' ? 'listen' : 'think') : '');
+  if (state === 'listen') { i.textContent = '🔴'; s.textContent = 'LISTENING'; }
+  else if (state === 'think') { i.textContent = '⚡'; s.textContent = 'THINKING'; }
+  else { i.textContent = '🎙'; s.textContent = 'SPEAK'; }
+}
+
+function waveOn(on) {
+  document.querySelectorAll('.wb').forEach((b,i) => {
+    if (on) { b.classList.add('on'); b.style.animationDelay = (i*0.06)+'s'; b.style.animation = 'wv 0.5s ease-in-out infinite alternate'; b.style.animationDelay = (i*0.07)+'s'; }
+    else { b.classList.remove('on'); b.style.animation = ''; }
+  });
+}
+
+// Inject wave keyframes
+const wvStyle = document.createElement('style');
+wvStyle.textContent = '@keyframes wv { from{height:3px} to{height:22px} }';
+document.head.appendChild(wvStyle);
+
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const clean = text.replace(/[*_#`•]/g,'').replace(/\n/g,' ');
+  const u = new SpeechSynthesisUtterance(clean);
+  u.rate = 0.92; u.pitch = 0.80; u.volume = 1;
+  const voices = speechSynthesis.getVoices();
+  const v = voices.find(v => v.name.includes('Daniel') || v.name.includes('Arthur') || v.name.includes('Google UK') || v.name.includes('British'))
+          || voices.find(v => v.lang === 'en-GB') || voices[0];
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+
+function toggleSpeak() {
+  autoSpeak = !autoSpeak;
+  const b = document.getElementById('spkBtn');
+  b.textContent = autoSpeak ? '🔊 ON' : '🔇 OFF';
+  b.className = 'btn ' + (autoSpeak ? 'grn' : 'active');
+  if (!autoSpeak) speechSynthesis.cancel();
+}
+
+function clearChat() {
+  document.getElementById('transcript').innerHTML = '';
+  history = [];
+  speechSynthesis.cancel();
+}
+
+// API key prompt on load
+window.onload = () => {
+  const key = prompt('Enter your Anthropic API key (sk-ant-api03-...):\n\nYour key is used locally only and never stored.');
+  if (!key || !key.startsWith('sk-ant')) {
+    alert('Valid API key required. Reload the page to try again.');
+    return;
+  }
+  window._apiKey = key;
+  addMsg('j','J.A.R.V.I.S','API key accepted. R&R Capital intelligence system is live. CPI at 3.8% today — Fed rate hike risk elevated. NBIS reports tomorrow. ONDS and WYFI on Wednesday. How can I assist you?');
+  if (autoSpeak) setTimeout(()=>speak('API key accepted. R&R Capital intelligence system is live. How can I assist you?'),500);
+};
+</script>
+</body>
+</html>
